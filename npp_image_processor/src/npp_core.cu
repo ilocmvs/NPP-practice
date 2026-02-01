@@ -14,8 +14,6 @@ GpuImage8u gpuAlloc8u(int w, int h, int c) {
   out.w=w; out.h=h; out.c=c;
   size_t pitchBytes = 0;
 
-  // TODO: use cudaMallocPitch for out.d and set out.pitch
-  // pitchBytes should be in bytes; width in bytes is w*c*sizeof(Npp8u)
   cudaMallocPitch((void**)&out.d, &pitchBytes, w*c*sizeof(Npp8u), h);
   out.pitch = static_cast<int>(pitchBytes);
   return out;
@@ -26,7 +24,6 @@ GpuImage32f gpuAlloc32f(int w, int h, int c) {
   out.w=w; out.h=h; out.c=c;
   size_t pitchBytes = 0;
 
-  // TODO: cudaMallocPitch for Npp32f; width in bytes is w*c*sizeof(Npp32f)
   cudaMallocPitch((void**)&out.d, &pitchBytes, w*c*sizeof(Npp32f), h);
   out.pitch = static_cast<int>(pitchBytes);
 
@@ -47,14 +44,12 @@ void uploadToGpu(const uint8_t* h_data, int w, int h, int c, GpuImage8u& dst, co
   if (!dst.d || dst.w!=w || dst.h!=h || dst.c!=c) {
     throw std::runtime_error("uploadToGpu: dst not allocated or wrong shape");
   }
-  // TODO: cudaMemcpy2DAsync into dst.d with dst.pitch
-  // src pitch = w*c bytes
+
   cudaMemcpy2DAsync(dst.d, dst.pitch, h_data, w*c*sizeof(Npp8u), w*c*sizeof(Npp8u), h, cudaMemcpyHostToDevice, ctx.stream);
   (void)ctx;
 }
 
 void downloadFromGpu(const GpuImage8u& src, uint8_t* h_out, const NppCtx& ctx) {
-  // TODO: cudaMemcpy2DAsync from src.d to h_out
   cudaMemcpy2DAsync(h_out, src.w*src.c*sizeof(Npp8u), src.d, src.pitch, src.w*src.c*sizeof(Npp8u), src.h, cudaMemcpyDeviceToHost, ctx.stream);
   (void)ctx;
 }
@@ -64,13 +59,6 @@ GpuImage8u rgbToGray(const GpuImage8u& rgb, const NppCtx& ctx) {
   if (rgb.c != 3) throw std::runtime_error("rgbToGray expects c=3");
   GpuImage8u out = gpuAlloc8u(rgb.w, rgb.h, 1);
 
-  // TODO: call nppiRGBToGray_8u_C3C1R (or BGR variant depending on your data)
-  // - src pointer: rgb.d
-  // - src step: rgb.pitch
-  // - dst pointer: out.d
-  // - dst step: out.pitch
-  // - image size: sz(rgb.w, rgb.h)
-  // If using stream ctx: use *Ctx variants if available in your installed NPP.
   nppiRGBToGray_8u_C3C1R_Ctx(rgb.d, rgb.pitch, out.d, out.pitch, sz(rgb.w, rgb.h), ctx.nppStreamCtx);
 
   (void)ctx;
@@ -81,7 +69,6 @@ GpuImage8u grayToRgb(const GpuImage8u& gray, const NppCtx& ctx) {
   if (gray.c != 1) throw std::runtime_error("grayToRgb expects c=1");
   GpuImage8u out = gpuAlloc8u(gray.w, gray.h, 3);
 
-  // TODO: nppiGrayToRGB_8u_C1C3R
   NppiSize roi = { gray.w, gray.h };
   nppiDup_8u_C1C3R_Ctx(gray.d, gray.pitch, out.d, out.pitch, roi, ctx.nppStreamCtx);
 
@@ -92,11 +79,6 @@ GpuImage8u grayToRgb(const GpuImage8u& gray, const NppCtx& ctx) {
 GpuImage8u resizeLinear(const GpuImage8u& src, int outW, int outH, const NppCtx& ctx) {
   GpuImage8u out = gpuAlloc8u(outW, outH, src.c);
 
-  // TODO: nppiResize_8u_CxR (choose C1R/C3R based on src.c)
-  // Typical parameters include:
-  // - src ROI rect, dst ROI rect
-  // - scale factors or computed from sizes
-  // Use NPPI_INTER_LINEAR
   if (src.c == 1) {
     nppiResize_8u_C1R_Ctx(src.d, src.pitch, sz(src.w, src.h), roi(src.w, src.h),
                           out.d, out.pitch, sz(outW, outH), roi(outW, outH),
@@ -163,11 +145,6 @@ GpuImage8u gaussianBlur(const GpuImage8u& srcGray, int ksize, double sigma, cons
   if (srcGray.c != 1) throw std::runtime_error("gaussianBlur expects grayscale");
   GpuImage8u out = gpuAlloc8u(srcGray.w, srcGray.h, 1);
 
-  // TODO: Use an NPP filtering path.
-  // Options depending on NPP version:
-  // - nppiFilterGaussian_8u_C1R (if available)
-  // - or build a Gaussian kernel and use nppiFilter_8u_C1R
-  // Practice goal: allocate kernel on host, pass to NPP filter.
   nppiFilterGauss_8u_C1R_Ctx(srcGray.d, srcGray.pitch, out.d, out.pitch, sz(srcGray.w, srcGray.h), 
                               (ksize == 3) ? NPP_MASK_SIZE_3_X_3 : 
                               (ksize == 5) ? NPP_MASK_SIZE_5_X_5 :
@@ -210,15 +187,6 @@ __global__ void magKernel(const float* gx, int gxPitchFloats,
 GpuImage8u sobelEdges(const GpuImage8u& srcGray, const NppCtx& ctx) {
   if (srcGray.c != 1) throw std::runtime_error("sobelEdges expects grayscale");
 
-  // Output can be 8u for simplicity, but Sobel typically produces signed / wider range.
-  // Common practice: compute into 16s or 32f, then convert back.
-  // We'll guide you into a 16s path then scale to 8u.
-
-  // TODO:
-  // 1) alloc GpuImage16s-like (you can add a struct, or reuse 32f)
-  // 2) nppiFilterSobelHoriz/Vert (or generic Sobel) into 16s/32f
-  // 3) magnitude (either NPP or a tiny custom kernel)
-  // 4) convert/scale back to 8u out
   GpuImage32f tmp32f_image = gpuAlloc32f(srcGray.w, srcGray.h, 1);
   nppiConvert_8u32f_C1R_Ctx(
       srcGray.d, srcGray.pitch,
@@ -276,8 +244,6 @@ GpuImage8u thresholdBinary(const GpuImage8u& srcGray, uint8_t thresh, const NppC
   if (srcGray.c != 1) throw std::runtime_error("thresholdBinary expects grayscale");
   GpuImage8u out = gpuAlloc8u(srcGray.w, srcGray.h, 1);
 
-  // TODO: nppiThreshold_8u_C1R (or compare against constant)
-  // Ensure output is 0/255.
   nppiThreshold_8u_C1R_Ctx(
       srcGray.d, srcGray.pitch,
       out.d, out.pitch,
@@ -324,10 +290,6 @@ GpuImage8u warpAffine(const GpuImage8u& src,
                       int outW,int outH, const NppCtx& ctx) {
   GpuImage8u out = gpuAlloc8u(outW, outH, src.c);
 
-  // TODO: nppiWarpAffine_8u_CxR (C1/C3)
-  // Matrix usually passed as double[2][3] or similar depending on API.
-  // Set interpolation: NPPI_INTER_LINEAR
-  // Define src ROI and dst ROI
   double affineMatrix[2][3] = {
       {static_cast<double>(a0), static_cast<double>(a1), static_cast<double>(a2)},
       {static_cast<double>(b0), static_cast<double>(b1), static_cast<double>(b2)}
