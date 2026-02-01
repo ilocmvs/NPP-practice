@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\AI projects\NPP-practice\npp_image_processor\build\CMakeFiles\95d9fa3bcf2e188b55ec21529b8e22dc\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{3D577C9B-2A07-3D95-B546-ED1800262D0E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

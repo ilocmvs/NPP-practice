@@ -22,13 +22,23 @@ target_include_directories(npp_proc PRIVATE
 target_link_libraries(npp_proc PRIVATE
   CUDA::cudart
   CUDA::nppc
-  CUDA::nppi
+  CUDA::nppial
+  CUDA::nppicc
+  CUDA::nppig
   CUDA::nppif
+  CUDA::nppim
+  CUDA::nppist
+  CUDA::nppidei
+  CUDA::nppitc
 )
 
 # Useful for debugging device errors
 if (MSVC)
-  target_compile_options(npp_proc PRIVATE /W4)
+  target_compile_options(npp_proc PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:/W4>
+  )
 else()
-  target_compile_options(npp_proc PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(npp_proc PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>
+  )
 endif()

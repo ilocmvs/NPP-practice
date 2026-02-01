@@ -1,0 +1,10 @@
+^C:\AI PROJECTS\NPP-PRACTICE\NPP_IMAGE_PROCESSOR\BUILD\CMAKEFILES\95D9FA3BCF2E188B55EC21529B8E22DC\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" "-SC:/AI projects/NPP-practice/npp_image_processor" "-BC:/AI projects/NPP-practice/npp_image_processor/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/AI projects/NPP-practice/npp_image_processor/build/npp_image_processor.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

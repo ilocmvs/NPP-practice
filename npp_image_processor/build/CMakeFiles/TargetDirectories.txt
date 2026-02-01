@@ -1,0 +1,3 @@
+C:/AI projects/NPP-practice/npp_image_processor/build/CMakeFiles/npp_proc.dir
+C:/AI projects/NPP-practice/npp_image_processor/build/CMakeFiles/ALL_BUILD.dir
+C:/AI projects/NPP-practice/npp_image_processor/build/CMakeFiles/ZERO_CHECK.dir
